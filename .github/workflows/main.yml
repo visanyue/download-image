@@ -1,36 +1,40 @@
-name: Download and Package Docker Images
+name: Build Full Trading Web Image
 
 on:
-  workflow_dispatch: # 允许手动点击按钮触发
+  workflow_dispatch:
 
 jobs:
-  download:
+  build-and-save:
     runs-on: ubuntu-latest
     steps:
-      - name: Pull All Docker Images
-        run: |
-          # 拉取原作者做好的前后端成品镜像
-          docker pull hsliuping/trading-agents-backend:latest
-          docker pull hsliuping/trading-agents-frontend:latest
-          # 拉取标准的数据库镜像
-          docker pull mongo:7.0
-          docker pull redis:7-alpine
+      # 1. 抓取原项目的最新全套源码
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+        with:
+          repository: 'BG8CFB/TradingAgents-CN'
+          ref: 'main'
 
-      - name: Save Images to Local Tar
+      # 2. 现场编译出跟作者名字一模一样的合体 web 镜像
+      - name: Build Full Web Image
         run: |
-          # 把这 4 个镜像打包成 4 个物理文件
-          docker save hsliuping/trading-agents-backend:latest -o backend.tar
-          docker save hsliuping/trading-agents-frontend:latest -o frontend.tar
-          docker save mongo:7.0 -o mongo.tar
-          docker save redis:7-alpine -o redis.tar
+          docker build -t hsliuping/tradingagents-cn:latest -f Dockerfile .
 
-      - name: Upload Images as Artifacts
+      # 3. 把这个做好的大镜像，加上官方数据库和缓存，全部打包成物理文件
+      - name: Save All Images to Tar
+        run: |
+          docker pull mongo:7
+          docker pull redis:7
+          docker save hsliuping/tradingagents-cn:latest -o web.tar
+          docker save mongo:7 -o mongo.tar
+          docker save redis:7 -o redis.tar
+
+      # 4. 压缩成一个 ZIP 供你电脑高速下载
+      - name: Upload Zip Package
         uses: actions/upload-artifact@v4
         with:
-          name: all-trading-images
+          name: full-trading-package
           path: |
-            backend.tar
-            frontend.tar
+            web.tar
             mongo.tar
             redis.tar
           retention-days: 1
