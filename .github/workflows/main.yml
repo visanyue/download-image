@@ -1,27 +1,36 @@
 name: Download and Package Docker Images
 
 on:
-  workflow_dispatch: # 允许我们手动点击按钮触发
+  workflow_dispatch: # 允许手动点击按钮触发
 
 jobs:
   download:
     runs-on: ubuntu-latest
     steps:
-      - name: Pull Docker Images
+      - name: Pull All Docker Images
         run: |
+          # 拉取原作者做好的前后端成品镜像
           docker pull hsliuping/trading-agents-backend:latest
           docker pull hsliuping/trading-agents-frontend:latest
+          # 拉取标准的数据库镜像
+          docker pull mongo:7.0
+          docker pull redis:7-alpine
 
       - name: Save Images to Local Tar
         run: |
+          # 把这 4 个镜像打包成 4 个物理文件
           docker save hsliuping/trading-agents-backend:latest -o backend.tar
           docker save hsliuping/trading-agents-frontend:latest -o frontend.tar
+          docker save mongo:7.0 -o mongo.tar
+          docker save redis:7-alpine -o redis.tar
 
       - name: Upload Images as Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: my-trading-images
+          name: all-trading-images
           path: |
             backend.tar
             frontend.tar
+            mongo.tar
+            redis.tar
           retention-days: 1
