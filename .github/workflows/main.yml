@@ -1,26 +1,27 @@
 name: Download and Package Docker Images
 
 on:
-  workflow_dispatch: # 允许我们手动点击按钮触发
+  workflow_dispatch: # 允许手动点击触发
 
 jobs:
   download:
     runs-on: ubuntu-latest
     steps:
-      - name: Pull and Save Backend Image
+      - name: Pull Docker Images from Hub
         run: |
           docker pull hsliuping/trading-agents-backend:latest
-          docker save hsliuping/trading-agents-backend:latest -o backend.tar
-
-      - name: Pull and Save Frontend Image
-        run: |
           docker pull hsliuping/trading-agents-frontend:latest
-          docker save hsliuping/trading-agents-frontend:latest -o frontend.tar
 
-      - name: Upload Images as Artifacts
+      - name: Archive Images to Gzip
+        run: |
+          docker save hsliuping/trading-agents-backend:latest -o backend.tar
+          docker save hsliuping/trading-agents-frontend:latest -o frontend.tar
+          # 用标准的 gzip 压缩成大文件，防止 GitHub 传输机制报错
+          tar -czvf trading-images.tar.gz backend.tar frontend.tar
+
+      - name: Upload to GitHub Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: trading-agents-images
-          path: |
-            backend.tar
-            frontend.tar
+          name: my-docker-images
+          path: trading-images.tar.gz
+          retention-days: 1
